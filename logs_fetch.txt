@@ -1,0 +1,8 @@
+  20/141 (ok=8 skip=12 fail=0)
+  40/141 (ok=28 skip=12 fail=0)
+  60/141 (ok=48 skip=12 fail=0)
+  80/141 (ok=68 skip=12 fail=0)
+  100/141 (ok=88 skip=12 fail=0)
+  120/141 (ok=108 skip=12 fail=0)
+  140/141 (ok=128 skip=12 fail=0)
+fetch complete: ok=129 skipped=12 failed=0

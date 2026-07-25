@@ -1,0 +1,16 @@
+{
+  "n_snapshots": 141,
+  "first_snapshot": "20111011093729",
+  "last_snapshot": "20260701155715",
+  "n_distinct_providers": 2090,
+  "n_transitions": 140,
+  "mean_retention_rate": 0.4557,
+  "mean_turnover_rate": 0.5443,
+  "share_seen_once": 0.6584,
+  "caveats": [
+    "Snapshot spacing is irregular (Wayback capture dates), so adjacent-snapshot turnover is not a constant-interval rate; year strata mitigate but do not remove this.",
+    "Rosters reflect what the archived index page rendered, which is a top-N view, not the full provider population.",
+    "A provider re-listing under a new id is coded as a new provider (conservative rule, protocol section 6); this can only overstate turnover, never understate it.",
+    "Descriptive only: no survival estimate, no causal claim."
+  ]
+}
