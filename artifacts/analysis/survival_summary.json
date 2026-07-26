@@ -1,0 +1,23 @@
+{
+  "n_providers": 2090,
+  "n_intervals": 2090,
+  "n_right_censored": 49,
+  "n_excluded": 0,
+  "estimator": "Turnbull (1976) NPMLE, self-consistency/EM",
+  "n_support_intervals": 52,
+  "survival": {
+    "S_30d": 0.367,
+    "S_90d": 0.2143,
+    "S_180d": 0.1109,
+    "S_365d": 0.039,
+    "S_730d": 0.008,
+    "S_1095d": 0.0014
+  },
+  "median_survival_days": 11.0,
+  "caveats": [
+    "Time origin is first observed appearance on the archived index, not platform registration; providers may predate their first capture.",
+    "Snapshot spacing is irregular, so interval widths vary; this is handled by the interval-censored estimator rather than assumed away.",
+    "Disappearance from the archived top-N roster is not proof of account closure: a provider may persist off the leaderboard. The endpoint is leaderboard visibility, and is reported as such.",
+    "Re-listing under a new id counts as a new provider (conservative; can only overstate attrition)."
+  ]
+}
