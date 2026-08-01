@@ -19,13 +19,22 @@ Cohort (frozen, protocol section 6):
   re-listing under a new id is a NEW provider (conservative; can only
            overstate attrition -- protocol section 6)
 
-Robustness: providers whose observation begins at the last snapshot contribute
-no interval and are excluded, with counts reported.
+Robustness: providers whose observation begins at the last snapshot are
+INCLUDED as right-censored at 0 days. Such observations are informationless
+for the NPMLE (they constrain nothing), so estimates are identical to
+excluding them; inclusion is the smaller intervention and their count is
+reported explicitly as n_zero_followup.
+
+Sparse-year rule (frozen, protocol section 6): any calendar year with fewer
+than 2 usable snapshots is reported descriptively only and excluded from the
+survival model. The check is evaluated on every run and its result written to
+artifacts/analysis/sparse_year_check.txt.
 
 Reads:  artifacts/rosters/index_rosters.csv
 Writes: artifacts/analysis/survival_intervals.csv
         artifacts/analysis/survival_turnbull.csv
         artifacts/analysis/survival_summary.json
+        artifacts/analysis/sparse_year_check.txt
 """
 import csv
 import json
@@ -65,31 +74,79 @@ def build_intervals(snap):
             first_idx.setdefault(p, i)
             last_idx[p] = i
 
-    intervals, rows = [], []
-    n_censored = n_excluded = 0
+    items = []
+    n_censored = n_zero_followup = 0
     for p, i0 in first_idx.items():
         i_last = last_idx[p]
         entry = times[i0]
         if i_last == len(ts) - 1:
-            # still present at the final snapshot: right-censored
+            # Still present at the final snapshot: right-censored. This
+            # includes providers first observed AT the final snapshot, which
+            # are right-censored at 0 days -- informationless for the NPMLE
+            # (estimates identical to excluding them) but counted explicitly.
             dur = (times[i_last] - entry).days
-            intervals.append((float(dur), None))
-            rows.append((p, ts[i0], ts[i_last], dur, "", "censored"))
             n_censored += 1
-            continue
-        if i_last + 1 >= len(ts):
-            n_excluded += 1
+            if i0 == len(ts) - 1:
+                n_zero_followup += 1
+            items.append(((float(dur), None),
+                          (p, ts[i0], ts[i_last], dur, "", "censored")))
             continue
         L = (times[i_last] - entry).days          # last seen alive
         R = (times[i_last + 1] - entry).days      # first seen absent
         if R <= L:
             R = L + 1
-        intervals.append((float(L), float(R)))
-        rows.append((p, ts[i0], ts[i_last], L, R, "interval"))
+        items.append(((float(L), float(R)),
+                      (p, ts[i0], ts[i_last], L, R, "interval")))
+
+    # Deterministic output order: set iteration above is subject to hash
+    # randomization, which made the committed CSV non-byte-reproducible
+    # (identical as a multiset, different row order per run). Sort by
+    # (entry_ts, signal_id) so artifact bytes are stable across runs.
+    items.sort(key=lambda it: (it[1][1], it[1][0]))
+    intervals = [iv for iv, _ in items]
+    rows = [row for _, row in items]
 
     stats = {"n_providers": len(first_idx), "n_intervals": len(intervals),
-             "n_right_censored": n_censored, "n_excluded": n_excluded}
+             "n_right_censored": n_censored,
+             "n_zero_followup": n_zero_followup}
     return intervals, rows, stats
+
+
+SPARSE_YEAR_MIN = 2   # frozen at protocol section 6: "fewer than 2 usable
+                      # snapshots" => descriptive reporting only, excluded
+                      # from the survival model
+
+
+def sparse_year_check(snap):
+    """Frozen sparse-year rule (protocol section 6, mechanical): any calendar
+    year with fewer than SPARSE_YEAR_MIN usable snapshots is excluded from
+    the survival model and reported descriptively only. Returns (snap_kept,
+    result_line); writes the one-line result artifact."""
+    per_year = {}
+    for t in snap:
+        per_year[t[:4]] = per_year.get(t[:4], 0) + 1
+    sparse = sorted(y for y, c in per_year.items() if c < SPARSE_YEAR_MIN)
+    mn = min(per_year.values())
+    at_min = sorted(y for y, c in per_year.items() if c == mn)
+    if sparse:
+        kept = OrderedDict((t, s) for t, s in snap.items()
+                           if t[:4] not in sparse)
+        line = ("sparse-year rule evaluated (protocol section 6, threshold "
+                "< %d usable snapshots/year): years %s below threshold, "
+                "excluded from the survival model and reported descriptively "
+                "only (%d snapshots dropped)."
+                % (SPARSE_YEAR_MIN, ", ".join(sparse),
+                   len(snap) - len(kept)))
+    else:
+        kept = snap
+        line = ("sparse-year rule evaluated (protocol section 6, threshold "
+                "< %d usable snapshots/year): no year below threshold "
+                "(min = %d usable snapshots, in %s); no exclusions."
+                % (SPARSE_YEAR_MIN, mn, " and ".join(at_min)))
+    with open(os.path.join(OUT, "sparse_year_check.txt"), "w") as f:
+        f.write(line + "\n")
+    print(line)
+    return kept, line
 
 
 def turnbull(intervals):
@@ -153,6 +210,7 @@ def turnbull(intervals):
 def main():
     os.makedirs(OUT, exist_ok=True)
     snap = load_snapshots()
+    snap, sparse_line = sparse_year_check(snap)
     intervals, rows, stats = build_intervals(snap)
 
     with open(os.path.join(OUT, "survival_intervals.csv"), "w",
@@ -193,6 +251,7 @@ def main():
 
     summary = {
         **stats,
+        "sparse_year_rule": sparse_line,
         "estimator": "Turnbull (1976) NPMLE, self-consistency/EM",
         "n_support_intervals": len(support),
         "survival": marks,

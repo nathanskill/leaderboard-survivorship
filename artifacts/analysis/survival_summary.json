@@ -2,7 +2,8 @@
   "n_providers": 2090,
   "n_intervals": 2090,
   "n_right_censored": 49,
-  "n_excluded": 0,
+  "n_zero_followup": 16,
+  "sparse_year_rule": "sparse-year rule evaluated (protocol section 6, threshold < 2 usable snapshots/year): no year below threshold (min = 3 usable snapshots, in 2011 and 2022); no exclusions.",
   "estimator": "Turnbull (1976) NPMLE, self-consistency/EM",
   "n_support_intervals": 52,
   "survival": {

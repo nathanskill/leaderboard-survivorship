@@ -28,7 +28,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from collections import defaultdict
+from collections import OrderedDict, defaultdict
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(ROOT, "data")
@@ -124,41 +124,54 @@ def cmd_fetch_index(limit=None):
     if limit:
         snaps = snaps[:limit]
     man = os.path.join(DATA, "index_fetch_manifest.csv")
-    done = set()
+    fields = ["timestamp", "original", "bytes", "sha256", "status"]
+    # Resumability: only rows with status=="ok" count as done. Building the
+    # done-set from ALL rows (the previous behaviour) treated failed fetches
+    # as complete and silently dropped those snapshots on any re-collection.
+    manifest = OrderedDict()
     if os.path.exists(man):
         with open(man, newline="") as f:
-            done = {r["timestamp"] for r in csv.DictReader(f)}
-    new = not os.path.exists(man)
-    fh = open(man, "a", newline="")
-    w = csv.DictWriter(fh, fieldnames=["timestamp", "original", "bytes",
-                                       "sha256", "status"])
-    if new:
-        w.writeheader()
+            for r in csv.DictReader(f):
+                manifest[r["timestamp"]] = r
+
+    def write_manifest():
+        # Full atomic rewrite: a retried fetch REPLACES its failed row in
+        # place rather than appending a duplicate, and an interrupted run
+        # still leaves a valid, duplicate-free manifest on disk.
+        tmp = man + ".tmp"
+        with open(tmp, "w", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=fields)
+            w.writeheader()
+            for r in manifest.values():
+                w.writerow(r)
+        os.replace(tmp, man)
+
     ok = skipped = failed = 0
     for i, s in enumerate(snaps, 1):
         ts = s["timestamp"]
-        if ts in done:
+        prev = manifest.get(ts)
+        if prev is not None and prev["status"] == "ok":
             skipped += 1
             continue
         path = os.path.join(RAW_INDEX, "%s.html" % ts)
         body = get(REPLAY.format(ts=ts, url=s["original"]))
         if body is None:
-            w.writerow({"timestamp": ts, "original": s["original"],
-                        "bytes": 0, "sha256": "", "status": "failed"})
+            manifest[ts] = {"timestamp": ts, "original": s["original"],
+                            "bytes": 0, "sha256": "", "status": "failed"}
             failed += 1
         else:
             with open(path, "wb") as f:
                 f.write(body)
-            w.writerow({"timestamp": ts, "original": s["original"],
-                        "bytes": len(body), "sha256": sha256(body),
-                        "status": "ok"})
+            manifest[ts] = {"timestamp": ts, "original": s["original"],
+                            "bytes": len(body), "sha256": sha256(body),
+                            "status": "ok"}
             ok += 1
-        fh.flush()
+        write_manifest()
         if i % 20 == 0:
             print("  %d/%d (ok=%d skip=%d fail=%d)" % (i, len(snaps), ok,
                                                        skipped, failed))
         time.sleep(DELAY)
-    fh.close()
+    write_manifest()
     import shutil
     shutil.copy2(man, os.path.join(ART, "manifests",
                                    "index_fetch_manifest.csv"))
@@ -188,7 +201,18 @@ def cmd_parse_index():
     rows = 0
     with open(out, "w", newline="") as f:
         w = csv.writer(f)
-        w.writerow(["timestamp", "rank_position", "signal_id"])
+        # dom_order is FIRST-OCCURRENCE ORDER of a signal id across the
+        # concatenated page sections of the archived index HTML -- it is NOT
+        # a leaderboard rank. In 2012-2017 layouts positions 11-20 are the
+        # MT4 top-10 appended after the MT5 top-10; post-2018 the order runs
+        # across Reliability -> Popular -> High rating -> New sections; and
+        # in snapshot 20120805222021 "position 1" is the MetaQuotes demo
+        # signal in an alphabetical list. This column MUST NEVER feed the
+        # protocol's secondary "past public rank predicts performance"
+        # endpoint as-is; deriving a true rank requires (section,
+        # within-section position) for eras where the page is a genuine
+        # ranked list.
+        w.writerow(["timestamp", "dom_order", "signal_id"])
         for name in files:
             ts = name[:-5]
             with open(os.path.join(RAW_INDEX, name), "rb") as fh:

@@ -1,0 +1,1 @@
+sparse-year rule evaluated (protocol section 6, threshold < 2 usable snapshots/year): no year below threshold (min = 3 usable snapshots, in 2011 and 2022); no exclusions.
