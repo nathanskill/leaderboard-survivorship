@@ -38,7 +38,13 @@ performance):
      age artefact; if it persists, it is not.
 
 Uncertainty: provider-clustered bootstrap (resampling whole providers), n=2000,
-fixed seed, percentile intervals — the same discipline as the survival stage.
+percentile intervals — the same discipline as the survival stage. Each block
+draws from its OWN generator, seeded deterministically from the master seed
+and the block's name, so that adding or reordering an analysis cannot shift a
+previously reported interval. An earlier revision threaded one generator
+through every block; adding the stratified comparison then moved the intervals
+of comparisons 1-3 while leaving their point estimates unchanged. Per-block
+seeding removes that coupling.
 
 Reads:  artifacts/performance/provider_performance.csv
         artifacts/rosters/index_rosters.csv
@@ -75,6 +81,43 @@ def quantile(xs, q):
     i = q * (len(s) - 1)
     lo, hi = int(i), min(int(i) + 1, len(s) - 1)
     return s[lo] + (s[hi] - s[lo]) * (i - lo)
+
+
+def boot_gap_ci(groups_a, groups_b, rng):
+    """Bootstrap interval for the DIFFERENCE of two medians.
+
+    Comparing two separately-computed intervals for overlap is a crude and
+    conservative test: non-overlap implies a difference, but overlap does not
+    imply its absence. Resampling both groups jointly and taking the interval
+    of the difference is the direct statement, and matches the paired-delta
+    discipline used in the companion replication audit.
+    """
+    if not groups_a or not groups_b:
+        return (None, None)
+    na, nb = len(groups_a), len(groups_b)
+    gaps = []
+    for _ in range(N_BOOT):
+        va = []
+        for _ in range(na):
+            va.extend(groups_a[rng.randrange(na)])
+        vb = []
+        for _ in range(nb):
+            vb.extend(groups_b[rng.randrange(nb)])
+        ma, mb = median(va), median(vb)
+        if ma is not None and mb is not None:
+            gaps.append(ma - mb)
+    if not gaps:
+        return (None, None)
+    return (round(quantile(gaps, 0.025), 2), round(quantile(gaps, 0.975), 2))
+
+
+def block_rng(name):
+    """Deterministic per-block generator: seed = master seed + block name.
+
+    Blocks are independent, so adding a comparison never perturbs another's
+    interval, and any single block can be re-run in isolation.
+    """
+    return random.Random("%d:%s" % (SEED, name))
 
 
 def boot_median_ci(groups, rng):
@@ -121,7 +164,6 @@ def load():
 
 def main():
     os.makedirs(OUT, exist_ok=True)
-    rng = random.Random(SEED)
     perf = load()
 
     # snapshot -> set of ids with a growth figure; provider -> observations
@@ -159,8 +201,12 @@ def main():
         sv, on = strata[age]
         if len(sv) < 8 or len(on) < 8:
             continue                      # too thin to report
-        slo, shi = boot_median_ci([[v] for v in sv], rng)
-        olo, ohi = boot_median_ci([[v] for v in on], rng)
+        slo, shi = boot_median_ci([[v] for v in sv],
+                                  block_rng("strat%s.surv" % age))
+        olo, ohi = boot_median_ci([[v] for v in on],
+                                  block_rng("strat%s.single" % age))
+        glo, ghi = boot_gap_ci([[v] for v in sv], [[v] for v in on],
+                               block_rng("strat%s.gap" % age))
         stratified.append({
             "track_record_years": age,
             "n_survivors": len(sv), "median_survivors": round(median(sv), 2),
@@ -168,6 +214,8 @@ def main():
             "n_single": len(on), "median_single": round(median(on), 2),
             "ci95_single": [olo, ohi],
             "gap": round(median(sv) - median(on), 2),
+            "gap_ci95": [glo, ghi],
+            "gap_ci_excludes_zero": bool(glo is not None and glo > 0),
             "ci_overlap": bool(slo is not None and ohi is not None
                                and slo <= ohi),
         })
@@ -203,7 +251,7 @@ def main():
     pos = sum(1 for d in deltas if d > 0)
 
     def block(name, vals, groups):
-        lo, hi = boot_median_ci(groups, rng)
+        lo, hi = boot_median_ci(groups, block_rng(name))
         return {
             "n_observations": len(vals), "n_providers": len(groups),
             "median": round(median(vals), 2),
@@ -228,6 +276,8 @@ def main():
             "survivors": block("surv", surv_vals, surv_groups),
             "single_appearance": block("once", once_vals, once_groups),
             "median_gap": round(median(surv_vals) - median(once_vals), 2),
+            "median_gap_ci95": list(boot_gap_ci(surv_groups, once_groups,
+                                                block_rng("c2.gap"))),
         },
         "comparison_4_stratified_by_track_record": {
             "rationale": ("the displayed figure is cumulative growth since a "
@@ -243,6 +293,15 @@ def main():
             "strata": stratified,
             "gap_positive_in_all_reported_strata": all(
                 s["gap"] > 0 for s in stratified),
+            "strata_whose_gap_interval_excludes_zero": [
+                s["track_record_years"] for s in stratified
+                if s["gap_ci_excludes_zero"]],
+            "inference_note": ("gap_ci95 is the direct bootstrap interval for "
+                               "the difference of medians and is the statement "
+                               "to read; ci_overlap between the two separate "
+                               "intervals is reported alongside it only "
+                               "because it is the cruder comparison a reader "
+                               "may otherwise make, and it is conservative"),
         },
         "comparison_3_within_snapshot": {
             "n_transitions": len(per_snap),
@@ -250,7 +309,11 @@ def main():
             "transitions_with_positive_delta": pos,
             "share_positive": round(pos / len(per_snap), 4),
         },
-        "bootstrap": {"n": N_BOOT, "seed": SEED,
+        "bootstrap": {"n": N_BOOT, "master_seed": SEED,
+                      "seeding": ("per block: Random('<master_seed>:<block "
+                                  "name>'), so blocks are independent and "
+                                  "adding an analysis cannot shift another's "
+                                  "interval"),
                       "unit": "provider (clustered)", "method": "percentile"},
         "caveats": [
             "The growth figure is what the page displayed, not audited "

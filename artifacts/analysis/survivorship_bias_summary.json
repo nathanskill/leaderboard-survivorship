@@ -8,7 +8,7 @@
       "n_providers": 1404,
       "median": 154.0,
       "median_ci95": [
-        137.0,
+        137.97,
         173.0
       ],
       "p25": 59.0,
@@ -21,7 +21,7 @@
       "median": 104.5,
       "median_ci95": [
         96.0,
-        114.0
+        113.5
       ],
       "p25": 42.75,
       "p75": 236.0,
@@ -35,8 +35,8 @@
       "n_providers": 390,
       "median": 155.5,
       "median_ci95": [
-        123.99,
-        184.0
+        119.5,
+        184.01
       ],
       "p25": 50.0,
       "p75": 332.0,
@@ -47,14 +47,18 @@
       "n_providers": 1014,
       "median": 90.5,
       "median_ci95": [
-        83.0,
+        83.5,
         101.0
       ],
       "p25": 40.25,
       "p75": 198.0,
       "share_negative": 0.0148
     },
-    "median_gap": 65.0
+    "median_gap": 65.0,
+    "median_gap_ci95": [
+      30.5,
+      93.0
+    ]
   },
   "comparison_4_stratified_by_track_record": {
     "rationale": "the displayed figure is cumulative growth since a stated inception year, so longer-displayed providers show larger numbers mechanically; the confound is real (median displayed track record at first appearance: 1.0 years for providers seen again, 0.0 for providers seen once), so the comparison is repeated within bands",
@@ -67,16 +71,21 @@
         "median_survivors": 98.0,
         "ci95_survivors": [
           69.0,
-          126.0
+          123.07
         ],
         "n_single": 566,
         "median_single": 58.0,
         "ci95_single": [
-          52.0,
-          68.51
+          51.0,
+          69.0
         ],
         "gap": 40.0,
-        "ci_overlap": false
+        "gap_ci95": [
+          7.0,
+          65.01
+        ],
+        "gap_ci_excludes_zero": true,
+        "ci_overlap": true
       },
       {
         "track_record_years": 1,
@@ -93,6 +102,11 @@
           144.0
         ],
         "gap": 64.0,
+        "gap_ci95": [
+          29.0,
+          95.0
+        ],
+        "gap_ci_excludes_zero": true,
         "ci_overlap": false
       },
       {
@@ -106,10 +120,15 @@
         "n_single": 58,
         "median_single": 169.0,
         "ci95_single": [
-          134.5,
+          131.49,
           238.0
         ],
         "gap": 93.0,
+        "gap_ci95": [
+          -16.51,
+          269.01
+        ],
+        "gap_ci_excludes_zero": false,
         "ci_overlap": true
       },
       {
@@ -127,10 +146,20 @@
           379.0
         ],
         "gap": 71.0,
+        "gap_ci95": [
+          -199.0,
+          205.0
+        ],
+        "gap_ci_excludes_zero": false,
         "ci_overlap": true
       }
     ],
-    "gap_positive_in_all_reported_strata": true
+    "gap_positive_in_all_reported_strata": true,
+    "strata_whose_gap_interval_excludes_zero": [
+      0,
+      1
+    ],
+    "inference_note": "gap_ci95 is the direct bootstrap interval for the difference of medians and is the statement to read; ci_overlap between the two separate intervals is reported alongside it only because it is the cruder comparison a reader may otherwise make, and it is conservative"
   },
   "comparison_3_within_snapshot": {
     "n_transitions": 71,
@@ -140,7 +169,8 @@
   },
   "bootstrap": {
     "n": 2000,
-    "seed": 20260723,
+    "master_seed": 20260723,
+    "seeding": "per block: Random('<master_seed>:<block name>'), so blocks are independent and adding an analysis cannot shift another's interval",
     "unit": "provider (clustered)",
     "method": "percentile"
   },
