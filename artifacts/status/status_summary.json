@@ -1,0 +1,111 @@
+{
+  "checked_utc": "2026-08-01T14:05:16Z",
+  "n_checked": 309,
+  "n_live_200": 18,
+  "n_gone_404_410": 291,
+  "n_other_or_error": 0,
+  "share_still_live": 0.0583,
+  "by_last_seen_year": {
+    "2011": {
+      "n": 9,
+      "live": 0,
+      "share_live": 0.0
+    },
+    "2012": {
+      "n": 20,
+      "live": 0,
+      "share_live": 0.0
+    },
+    "2013": {
+      "n": 20,
+      "live": 0,
+      "share_live": 0.0
+    },
+    "2014": {
+      "n": 20,
+      "live": 0,
+      "share_live": 0.0
+    },
+    "2015": {
+      "n": 20,
+      "live": 0,
+      "share_live": 0.0
+    },
+    "2016": {
+      "n": 20,
+      "live": 0,
+      "share_live": 0.0
+    },
+    "2017": {
+      "n": 20,
+      "live": 0,
+      "share_live": 0.0
+    },
+    "2018": {
+      "n": 20,
+      "live": 0,
+      "share_live": 0.0
+    },
+    "2019": {
+      "n": 20,
+      "live": 0,
+      "share_live": 0.0
+    },
+    "2020": {
+      "n": 20,
+      "live": 0,
+      "share_live": 0.0
+    },
+    "2021": {
+      "n": 20,
+      "live": 0,
+      "share_live": 0.0
+    },
+    "2022": {
+      "n": 20,
+      "live": 0,
+      "share_live": 0.0
+    },
+    "2023": {
+      "n": 20,
+      "live": 0,
+      "share_live": 0.0
+    },
+    "2024": {
+      "n": 20,
+      "live": 0,
+      "share_live": 0.0
+    },
+    "2025": {
+      "n": 20,
+      "live": 4,
+      "share_live": 0.2
+    },
+    "2026": {
+      "n": 20,
+      "live": 14,
+      "share_live": 0.7
+    }
+  },
+  "control_still_listed": {
+    "n": 49,
+    "n_live_200": 49,
+    "share_live": 1.0,
+    "definition": "every right-censored provider, i.e. present on the final archived roster"
+  },
+  "matched_recency_contrast": {
+    "year": "2026",
+    "departed_n": 20,
+    "departed_live": 14,
+    "still_listed_n": 37,
+    "still_listed_live": 37
+  },
+  "method": "one HEAD request per sampled provider page (/en/signals/<id>), 2 s apart, descriptive user-agent, no authentication and no personal data; robots.txt permits this path",
+  "interpretation": [
+    "A 200 means the provider page still resolves: the provider left the archived top-N leaderboard view but was not removed from the platform. A 404/410 means the page no longer resolves.",
+    "This confirms the protocol's death definition operationally and, more usefully, measures how far leaderboard visibility and platform presence diverge \u2014 the distinction the survival results have had to make in prose.",
+    "The sweep is a single point in time (the check date), so a live page today says nothing about the provider's state at the moment it left the roster.",
+    "Sampling is stratified by last-seen year and capped per stratum, so shares are within-stratum estimates; the pooled share is not population-weighted.",
+    "The control group contains no provider whose first appearance predates 2024, because no longer-tenured provider is still on the final roster. A page-retirement policy operating only on timescales beyond that range is therefore not excluded by the control alone; the matched-recency contrast is what separates departure from page age within the range the data covers."
+  ]
+}

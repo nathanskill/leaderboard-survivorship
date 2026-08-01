@@ -1,0 +1,40 @@
+strata: 16 years; sampled 309 providers (<= 20/year); estimated runtime 10 min
+  [25/309] last=404
+  [50/309] last=404
+  [75/309] last=404
+  [100/309] last=404
+  [125/309] last=404
+  [150/309] last=404
+  [175/309] last=404
+  [200/309] last=404
+  [225/309] last=404
+  [250/309] last=404
+  [275/309] last=404
+  [300/309] last=404
+{
+  "checked_utc": "2026-08-01T13:47:16Z",
+  "n_checked": 309,
+  "n_live_200": 18,
+  "n_gone_404_410": 291,
+  "n_other_or_error": 0,
+  "share_still_live": 0.0583,
+  "method": "one HEAD request per sampled provider page (/en/signals/<id>), 2 s apart, descriptive user-agent, no authentication and no personal data; robots.txt permits this path"
+}
+
+by last-seen year (checked / still live):
+  2011    9 /   0  (0%)
+  2012   20 /   0  (0%)
+  2013   20 /   0  (0%)
+  2014   20 /   0  (0%)
+  2015   20 /   0  (0%)
+  2016   20 /   0  (0%)
+  2017   20 /   0  (0%)
+  2018   20 /   0  (0%)
+  2019   20 /   0  (0%)
+  2020   20 /   0  (0%)
+  2021   20 /   0  (0%)
+  2022   20 /   0  (0%)
+  2023   20 /   0  (0%)
+  2024   20 /   0  (0%)
+  2025   20 /   4  (20%)
+  2026   20 /  14  (70%)
