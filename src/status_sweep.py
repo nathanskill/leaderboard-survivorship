@@ -143,13 +143,22 @@ def main():
     cnew = not os.path.exists(cpath)
     cstamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     todo_ctrl = [(sid, ets) for sid, ets in ctrl_ids if sid not in cdone]
+    CTRL_FIELDS = ["signal_id", "entry_ts", "http_status", "group",
+                   "checked_utc"]
+    if not cnew:
+        # Appending to a file whose header has fewer columns would silently
+        # misalign every new row, so refuse rather than corrupt.
+        with open(cpath, newline="") as f:
+            existing = next(csv.reader(f))
+        if existing != CTRL_FIELDS:
+            raise SystemExit(
+                "control file header %s does not match %s; refusing to "
+                "append. Migrate the file first." % (existing, CTRL_FIELDS))
     if todo_ctrl:
         print(f"control group: {len(ctrl_ids)} still-listed providers, "
               f"{len(todo_ctrl)} to check")
         with open(cpath, "a", newline="") as f:
-            w = csv.DictWriter(f, fieldnames=["signal_id", "entry_ts",
-                                              "http_status", "group",
-                                              "checked_utc"])
+            w = csv.DictWriter(f, fieldnames=CTRL_FIELDS)
             if cnew:
                 w.writeheader()
             for sid, ets in todo_ctrl:
