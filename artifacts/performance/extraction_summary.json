@@ -1,0 +1,95 @@
+{
+  "snapshots": 141,
+  "provider_rows": 4325,
+  "with_growth": 2569,
+  "with_subscribers": 2270,
+  "with_rating": 432,
+  "with_series": 956,
+  "coverage_by_year": {
+    "2011": {
+      "snap": 3,
+      "rows": 30,
+      "growth": 0
+    },
+    "2012": {
+      "snap": 12,
+      "rows": 141,
+      "growth": 0
+    },
+    "2013": {
+      "snap": 12,
+      "rows": 241,
+      "growth": 0
+    },
+    "2014": {
+      "snap": 12,
+      "rows": 240,
+      "growth": 0
+    },
+    "2015": {
+      "snap": 10,
+      "rows": 200,
+      "growth": 0
+    },
+    "2016": {
+      "snap": 12,
+      "rows": 240,
+      "growth": 0
+    },
+    "2017": {
+      "snap": 10,
+      "rows": 240,
+      "growth": 60
+    },
+    "2018": {
+      "snap": 6,
+      "rows": 255,
+      "growth": 246
+    },
+    "2019": {
+      "snap": 12,
+      "rows": 501,
+      "growth": 483
+    },
+    "2020": {
+      "snap": 10,
+      "rows": 428,
+      "growth": 407
+    },
+    "2021": {
+      "snap": 10,
+      "rows": 412,
+      "growth": 347
+    },
+    "2022": {
+      "snap": 3,
+      "rows": 125,
+      "growth": 101
+    },
+    "2023": {
+      "snap": 4,
+      "rows": 172,
+      "growth": 133
+    },
+    "2024": {
+      "snap": 6,
+      "rows": 238,
+      "growth": 155
+    },
+    "2025": {
+      "snap": 12,
+      "rows": 523,
+      "growth": 391
+    },
+    "2026": {
+      "snap": 7,
+      "rows": 339,
+      "growth": 246
+    }
+  },
+  "caveats": [
+    "Every field is what the archived page DISPLAYED at capture time; it is not audited performance, and the growth figure's window varies by card (its label is retained verbatim).",
+    "Field availability is era-dependent: early layouts carry fewer fields, so coverage must be reported per snapshot before any cross-era comparison.",
+    "Extraction is windowed after each provider id anchor; a card lacking a field yields empty rather than borrowing a neighbour's."
+  ]
+}

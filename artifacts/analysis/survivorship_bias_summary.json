@@ -1,0 +1,77 @@
+{
+  "growth_field": "displayed cumulative growth percentage as shown on the archived card; window varies by card and its label is retained in the extraction artifact",
+  "snapshots_with_growth": 73,
+  "providers_with_growth": 1404,
+  "comparison_1_visibility_weighted_vs_entry_cohort": {
+    "visibility_weighted": {
+      "n_observations": 2569,
+      "n_providers": 1404,
+      "median": 154.0,
+      "median_ci95": [
+        136.0,
+        173.0
+      ],
+      "p25": 59.0,
+      "p75": 353.0,
+      "share_negative": 0.0175
+    },
+    "entry_cohort": {
+      "n_observations": 1404,
+      "n_providers": 1404,
+      "median": 104.5,
+      "median_ci95": [
+        95.0,
+        113.0
+      ],
+      "p25": 42.75,
+      "p75": 236.0,
+      "share_negative": 0.0164
+    },
+    "median_gap": 49.5
+  },
+  "comparison_2_first_appearance_survivors_vs_single": {
+    "survivors": {
+      "n_observations": 390,
+      "n_providers": 390,
+      "median": 155.5,
+      "median_ci95": [
+        127.0,
+        184.0
+      ],
+      "p25": 50.0,
+      "p75": 332.0,
+      "share_negative": 0.0205
+    },
+    "single_appearance": {
+      "n_observations": 1014,
+      "n_providers": 1014,
+      "median": 90.5,
+      "median_ci95": [
+        83.5,
+        100.5
+      ],
+      "p25": 40.25,
+      "p75": 198.0,
+      "share_negative": 0.0148
+    },
+    "median_gap": 65.0
+  },
+  "comparison_3_within_snapshot": {
+    "n_transitions": 71,
+    "median_delta": 64.0,
+    "transitions_with_positive_delta": 68,
+    "share_positive": 0.9577
+  },
+  "bootstrap": {
+    "n": 2000,
+    "seed": 20260723,
+    "unit": "provider (clustered)",
+    "method": "percentile"
+  },
+  "caveats": [
+    "The growth figure is what the page displayed, not audited performance; cards differ in the window the figure covers, so levels are comparable only in the loose sense in which a browsing visitor compares them.",
+    "Growth is present only from 2017 onward; earlier layouts carry no growth field, so this analysis covers a shorter span than the survival analysis.",
+    "A difference between survivors and single-appearance providers is a selection statement about what remains visible; it is not evidence about the providers' subsequent returns, which are not observed here.",
+    "Comparison 1 is definitional as well as empirical: the visibility-weighted distribution counts long-lived providers many times by construction. That is precisely what a visitor encounters, which is why it is reported."
+  ]
+}
