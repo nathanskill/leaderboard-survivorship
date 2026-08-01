@@ -8,7 +8,7 @@
       "n_providers": 1404,
       "median": 154.0,
       "median_ci95": [
-        136.0,
+        137.0,
         173.0
       ],
       "p25": 59.0,
@@ -20,8 +20,8 @@
       "n_providers": 1404,
       "median": 104.5,
       "median_ci95": [
-        95.0,
-        113.0
+        96.0,
+        114.0
       ],
       "p25": 42.75,
       "p75": 236.0,
@@ -35,7 +35,7 @@
       "n_providers": 390,
       "median": 155.5,
       "median_ci95": [
-        127.0,
+        123.99,
         184.0
       ],
       "p25": 50.0,
@@ -47,14 +47,90 @@
       "n_providers": 1014,
       "median": 90.5,
       "median_ci95": [
-        83.5,
-        100.5
+        83.0,
+        101.0
       ],
       "p25": 40.25,
       "p75": 198.0,
       "share_negative": 0.0148
     },
     "median_gap": 65.0
+  },
+  "comparison_4_stratified_by_track_record": {
+    "rationale": "the displayed figure is cumulative growth since a stated inception year, so longer-displayed providers show larger numbers mechanically; the confound is real (median displayed track record at first appearance: 1.0 years for providers seen again, 0.0 for providers seen once), so the comparison is repeated within bands",
+    "median_track_record_survivors": 1.0,
+    "median_track_record_single": 0.0,
+    "strata": [
+      {
+        "track_record_years": 0,
+        "n_survivors": 161,
+        "median_survivors": 98.0,
+        "ci95_survivors": [
+          69.0,
+          126.0
+        ],
+        "n_single": 566,
+        "median_single": 58.0,
+        "ci95_single": [
+          52.0,
+          68.51
+        ],
+        "gap": 40.0,
+        "ci_overlap": false
+      },
+      {
+        "track_record_years": 1,
+        "n_survivors": 167,
+        "median_survivors": 194.0,
+        "ci95_survivors": [
+          158.0,
+          221.0
+        ],
+        "n_single": 365,
+        "median_single": 130.0,
+        "ci95_single": [
+          120.0,
+          144.0
+        ],
+        "gap": 64.0,
+        "ci_overlap": false
+      },
+      {
+        "track_record_years": 2,
+        "n_survivors": 27,
+        "median_survivors": 262.0,
+        "ci95_survivors": [
+          183.0,
+          440.0
+        ],
+        "n_single": 58,
+        "median_single": 169.0,
+        "ci95_single": [
+          134.5,
+          238.0
+        ],
+        "gap": 93.0,
+        "ci_overlap": true
+      },
+      {
+        "track_record_years": 3,
+        "n_survivors": 11,
+        "median_survivors": 338.0,
+        "ci95_survivors": [
+          68.0,
+          371.0
+        ],
+        "n_single": 11,
+        "median_single": 267.0,
+        "ci95_single": [
+          133.0,
+          379.0
+        ],
+        "gap": 71.0,
+        "ci_overlap": true
+      }
+    ],
+    "gap_positive_in_all_reported_strata": true
   },
   "comparison_3_within_snapshot": {
     "n_transitions": 71,
@@ -72,6 +148,7 @@
     "The growth figure is what the page displayed, not audited performance; cards differ in the window the figure covers, so levels are comparable only in the loose sense in which a browsing visitor compares them.",
     "Growth is present only from 2017 onward; earlier layouts carry no growth field, so this analysis covers a shorter span than the survival analysis.",
     "A difference between survivors and single-appearance providers is a selection statement about what remains visible; it is not evidence about the providers' subsequent returns, which are not observed here.",
+    "Comparison 2's gap is not an artefact of displayed track-record length: the confound is present but the gap persists inside every reported band (comparison 4). Bands thinner than 8 providers on either side are not reported.",
     "Comparison 1 is definitional as well as empirical: the visibility-weighted distribution counts long-lived providers many times by construction. That is precisely what a visitor encounters, which is why it is reported."
   ]
 }

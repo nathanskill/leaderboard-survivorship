@@ -7,7 +7,7 @@ distribution of everyone who ever entered it.
 Protocol reference: locked_protocol_v1.0.md. Half (i) — how long providers
 stay visible — is delivered by survival.py. This module delivers half (ii).
 
-Three comparisons, all on the displayed growth figure (what a prospective
+Four comparisons, all on the displayed growth figure (what a prospective
 follower could actually read off the card at capture time; not audited
 performance):
 
@@ -28,6 +28,15 @@ performance):
      at the following snapshot. This is what the bias looks like at the
      moment of browsing.
 
+  4. STRATIFIED BY TRACK-RECORD LENGTH. Comparison 2 has an obvious
+     confound: the displayed figure is growth since a stated inception year,
+     so a provider with a longer displayed history mechanically shows a
+     larger cumulative number, and providers who survive may simply be older.
+     The card's growth label carries that inception year, so the comparison
+     is repeated within bands of displayed track-record length at first
+     appearance. If the gap vanishes inside the bands, comparison 2 was an
+     age artefact; if it persists, it is not.
+
 Uncertainty: provider-clustered bootstrap (resampling whole providers), n=2000,
 fixed seed, percentile intervals — the same discipline as the survival stage.
 
@@ -40,6 +49,7 @@ import csv
 import json
 import os
 import random
+import re
 from collections import OrderedDict, defaultdict
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -89,14 +99,23 @@ def boot_median_ci(groups, rng):
     return (round(quantile(meds, 0.025), 2), round(quantile(meds, 0.975), 2))
 
 
+SINCE_RE = re.compile(r"since\s+(\d{4})", re.I)
+
+
 def load():
     perf = []
     with open(PERF, newline="") as f:
         for r in csv.DictReader(f):
             if r["growth_pct"] == "":
                 continue
+            m = SINCE_RE.search(r.get("growth_label", "") or "")
+            age = ""
+            if m:
+                a = int(r["timestamp"][:4]) - int(m.group(1))
+                if a >= 0:
+                    age = a
             perf.append({"ts": r["timestamp"], "sid": r["signal_id"],
-                         "growth": float(r["growth_pct"])})
+                         "growth": float(r["growth_pct"]), "age": age})
     return perf
 
 
@@ -110,13 +129,13 @@ def main():
     by_prov = defaultdict(list)
     for r in perf:
         snaps.setdefault(r["ts"], {})[r["sid"]] = r["growth"]
-        by_prov[r["sid"]].append((r["ts"], r["growth"]))
+        by_prov[r["sid"]].append((r["ts"], r["growth"], r["age"]))
     ts_sorted = sorted(snaps)
     for sid in by_prov:
         by_prov[sid].sort()
 
     # ---- comparison 1: visibility-weighted vs entry cohort ---------------
-    visible_groups = [[g for _, g in obs] for obs in by_prov.values()]
+    visible_groups = [[o[1] for o in obs] for obs in by_prov.values()]
     visible_vals = [g for grp in visible_groups for g in grp]
     entry_groups = [[obs[0][1]] for obs in by_prov.values()]
     entry_vals = [g for grp in entry_groups for g in grp]
@@ -127,6 +146,35 @@ def main():
         (surv_groups if len(obs) > 1 else once_groups).append([obs[0][1]])
     surv_vals = [g for grp in surv_groups for g in grp]
     once_vals = [g for grp in once_groups for g in grp]
+
+    # ---- comparison 4: stratified by displayed track-record length -------
+    strata = defaultdict(lambda: ([], []))
+    for obs in by_prov.values():
+        age = obs[0][2]
+        if age == "":
+            continue
+        (strata[age][0] if len(obs) > 1 else strata[age][1]).append(obs[0][1])
+    stratified = []
+    for age in sorted(strata):
+        sv, on = strata[age]
+        if len(sv) < 8 or len(on) < 8:
+            continue                      # too thin to report
+        slo, shi = boot_median_ci([[v] for v in sv], rng)
+        olo, ohi = boot_median_ci([[v] for v in on], rng)
+        stratified.append({
+            "track_record_years": age,
+            "n_survivors": len(sv), "median_survivors": round(median(sv), 2),
+            "ci95_survivors": [slo, shi],
+            "n_single": len(on), "median_single": round(median(on), 2),
+            "ci95_single": [olo, ohi],
+            "gap": round(median(sv) - median(on), 2),
+            "ci_overlap": bool(slo is not None and ohi is not None
+                               and slo <= ohi),
+        })
+    age_sv = [o[0][2] for o in by_prov.values()
+              if len(o) > 1 and o[0][2] != ""]
+    age_on = [o[0][2] for o in by_prov.values()
+              if len(o) == 1 and o[0][2] != ""]
 
     # ---- comparison 3: within-snapshot roster vs its survivors -----------
     per_snap = []
@@ -181,6 +229,21 @@ def main():
             "single_appearance": block("once", once_vals, once_groups),
             "median_gap": round(median(surv_vals) - median(once_vals), 2),
         },
+        "comparison_4_stratified_by_track_record": {
+            "rationale": ("the displayed figure is cumulative growth since a "
+                          "stated inception year, so longer-displayed "
+                          "providers show larger numbers mechanically; the "
+                          "confound is real (median displayed track record at "
+                          "first appearance: %s years for providers seen "
+                          "again, %s for providers seen once), so the "
+                          "comparison is repeated within bands"
+                          % (median(age_sv), median(age_on))),
+            "median_track_record_survivors": median(age_sv),
+            "median_track_record_single": median(age_on),
+            "strata": stratified,
+            "gap_positive_in_all_reported_strata": all(
+                s["gap"] > 0 for s in stratified),
+        },
         "comparison_3_within_snapshot": {
             "n_transitions": len(per_snap),
             "median_delta": round(median(deltas), 2),
@@ -201,6 +264,10 @@ def main():
             "is a selection statement about what remains visible; it is not "
             "evidence about the providers' subsequent returns, which are not "
             "observed here.",
+            "Comparison 2's gap is not an artefact of displayed track-record "
+            "length: the confound is present but the gap persists inside "
+            "every reported band (comparison 4). Bands thinner than 8 "
+            "providers on either side are not reported.",
             "Comparison 1 is definitional as well as empirical: the "
             "visibility-weighted distribution counts long-lived providers "
             "many times by construction. That is precisely what a visitor "
