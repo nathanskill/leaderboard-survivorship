@@ -30,6 +30,13 @@ old pages regardless of who is behind them. The control fixes that: if
 still-listed providers resolve while departed ones do not, page removal tracks
 departure rather than page age.
 
+Both groups are fetched by this script and both are resumable on signal_id,
+so the whole sweep — departed sample and control alike — is reproducible from
+the repository. (Provenance note: the control's first pass on 1 August 2026
+was issued by an ad-hoc script before this code path existed; the committed
+rows carry that run's timestamps, and re-running here appends nothing because
+the ids are already present.)
+
 Reads:  artifacts/analysis/survival_intervals.csv (who is coded dead, and who
         is right-censored and therefore the control)
 Writes: artifacts/status/live_status.csv
@@ -87,6 +94,8 @@ def main():
     p.add_argument("--per-stratum", type=int, default=PER_STRATUM)
     p.add_argument("--dry-run", action="store_true",
                    help="draw and report the sample without any request")
+    p.add_argument("--control-only", action="store_true",
+                   help="check only the control group, then summarise")
     a = p.parse_args()
 
     os.makedirs(OUT, exist_ok=True)
@@ -116,6 +125,46 @@ def main():
                   f"{min(a.per_stratum, len(by_year[y]))} sampled")
         return 0
 
+    # ---- control group: every right-censored provider --------------------
+    # Issued by this script so the control is reproducible from the repo.
+    # Resumable on signal_id, like the departed sweep.
+    ctrl_ids = []
+    with open(INTERVALS, newline="") as f:
+        for r in csv.DictReader(f):
+            if r["type"] == "censored":
+                ctrl_ids.append((r["signal_id"], r["entry_ts"]))
+    ctrl_ids.sort()
+    cpath = os.path.join(OUT, "control_still_listed.csv")
+    cdone = set()
+    if os.path.exists(cpath):
+        with open(cpath, newline="") as f:
+            for r in csv.DictReader(f):
+                cdone.add(r["signal_id"])
+    cnew = not os.path.exists(cpath)
+    cstamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    todo_ctrl = [(sid, ets) for sid, ets in ctrl_ids if sid not in cdone]
+    if todo_ctrl:
+        print(f"control group: {len(ctrl_ids)} still-listed providers, "
+              f"{len(todo_ctrl)} to check")
+        with open(cpath, "a", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=["signal_id", "entry_ts",
+                                              "http_status", "group",
+                                              "checked_utc"])
+            if cnew:
+                w.writeheader()
+            for sid, ets in todo_ctrl:
+                status, _clen, _err = head(URL % sid)
+                w.writerow({"signal_id": sid, "entry_ts": ets,
+                            "http_status": status,
+                            "group": "still-listed-control",
+                            "checked_utc": cstamp})
+                f.flush()
+                time.sleep(PAUSE)
+    else:
+        print(f"control group: {len(ctrl_ids)} providers already checked")
+    if a.control_only:
+        print("control-only run; skipping the departed sweep")
+
     done = {}
     path = os.path.join(OUT, "live_status.csv")
     if os.path.exists(path):
@@ -132,7 +181,7 @@ def main():
         if new:
             w.writeheader()
         for i, (year, sid) in enumerate(sample, 1):
-            if sid in done:
+            if sid in done or a.control_only:
                 continue
             status, clen, err = head(URL % sid)
             w.writerow({"signal_id": sid, "last_seen_year": year,
