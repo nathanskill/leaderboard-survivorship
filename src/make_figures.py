@@ -145,7 +145,79 @@ def fig2():
     print("written:", path)
 
 
+def fig3():
+    """Survivorship bias in the displayed performance distribution."""
+    import json
+    d = json.load(open(os.path.join(ART, "survivorship_bias_summary.json")))
+    c2 = d["comparison_2_first_appearance_survivors_vs_single"]
+    c4 = d["comparison_4_stratified_by_track_record"]
+    per = list(csv.DictReader(open(os.path.join(ART, "survivorship_bias.csv"))))
+
+    fig, (a1, a2, a3) = plt.subplots(1, 3, figsize=(11.6, 4.2))
+
+    # (a) survivors vs single-appearance at first appearance, with CIs
+    labels = ["seen again", "seen once"]
+    meds = [c2["survivors"]["median"], c2["single_appearance"]["median"]]
+    cis = [c2["survivors"]["median_ci95"], c2["single_appearance"]["median_ci95"]]
+    ns = [c2["survivors"]["n_providers"], c2["single_appearance"]["n_providers"]]
+    err = [[m - c[0] for m, c in zip(meds, cis)],
+           [c[1] - m for m, c in zip(meds, cis)]]
+    a1.bar(labels, meds, color=[BLUE, "#9e9e9e"], alpha=0.9, width=0.55)
+    a1.errorbar(labels, meds, yerr=err, fmt="none", ecolor=GREY,
+                capsize=5, lw=1.2)
+    for i, (m, n) in enumerate(zip(meds, ns)):
+        a1.annotate(f"{m:.0f}%\nn={n}", (i, cis[i][1]), ha="center",
+                    textcoords="offset points", xytext=(0, 8), fontsize=9,
+                    color=GREY)
+    a1.set_ylabel("median displayed growth at first\nappearance (%)", fontsize=9)
+    a1.set_title("(a) Selection at entry", fontsize=10)
+    a1.set_ylim(0, max(c[1] for c in cis) * 1.35)
+    a1.grid(axis="y", alpha=0.25, lw=0.5)
+
+    # (b) stratified by displayed track record
+    st = c4["strata"]
+    x = [s["track_record_years"] for s in st]
+    xs = [i - 0.18 for i in range(len(x))]
+    xo = [i + 0.18 for i in range(len(x))]
+    a2.bar(xs, [s["median_survivors"] for s in st], width=0.34, color=BLUE,
+           alpha=0.9, label="seen again")
+    a2.bar(xo, [s["median_single"] for s in st], width=0.34, color="#9e9e9e",
+           alpha=0.9, label="seen once")
+    a2.errorbar(xs, [s["median_survivors"] for s in st],
+                yerr=[[s["median_survivors"] - s["ci95_survivors"][0] for s in st],
+                      [s["ci95_survivors"][1] - s["median_survivors"] for s in st]],
+                fmt="none", ecolor=GREY, capsize=3, lw=1)
+    a2.errorbar(xo, [s["median_single"] for s in st],
+                yerr=[[s["median_single"] - s["ci95_single"][0] for s in st],
+                      [s["ci95_single"][1] - s["median_single"] for s in st]],
+                fmt="none", ecolor=GREY, capsize=3, lw=1)
+    a2.set_xticks(range(len(x)))
+    a2.set_xticklabels([str(v) for v in x])
+    a2.set_xlabel("displayed track record at first appearance (years)")
+    a2.set_ylabel("median displayed growth (%)", fontsize=9)
+    a2.set_title("(b) Within track-record bands", fontsize=10)
+    a2.legend(fontsize=8, frameon=False)
+    a2.grid(axis="y", alpha=0.25, lw=0.5)
+
+    # (c) within-snapshot deltas
+    deltas = [float(r["delta"]) for r in per]
+    a3.hist(deltas, bins=18, color=BLUE, alpha=0.85)
+    a3.axvline(0, color=GREY, lw=1)
+    pos = sum(1 for v in deltas if v > 0)
+    a3.set_xlabel("survivor median $-$ roster median\n(percentage points)", fontsize=9)
+    a3.set_ylabel("snapshot transitions")
+    a3.set_title(f"(c) Positive in {pos} of {len(deltas)} transitions",
+                 fontsize=10)
+    a3.grid(axis="y", alpha=0.25, lw=0.5)
+
+    fig.tight_layout()
+    path = os.path.join(OUT, "fig3_survivorship_bias.png")
+    fig.savefig(path, dpi=200)
+    print("written:", path)
+
+
 if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
     fig1()
     fig2()
+    fig3()
